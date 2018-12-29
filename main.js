@@ -6,6 +6,7 @@ const C = CANVAS.getContext('2d');
 let RATE = 8;
 let RATE_COUNT = RATE;
 let GAME_STARTED = false;
+let START_TIME;
 
 function randRange(min, max) {
   return Math.floor(Math.random() * (max - min) + min);
@@ -122,6 +123,8 @@ class Game {
 
   run() {
     C.clearRect(0, 0, W, H);
+    this.showClock();
+    this.showScore();
     this.grid.drawSnake(this.snake);
     this.grid.drawFood(this.food);
     if (this.snakeAteFood()) {
@@ -156,6 +159,30 @@ class Game {
       && col < this.grid.nCols;
   }
 
+  showClock() {
+    const milliSinceStart = Date.now() - START_TIME;
+    const seconds = Math.floor(milliSinceStart / 1000);
+    C.beginPath();
+    C.font = '30px Arial';
+    C.fillStyle = 'white';
+    C.fillText('Time: ', 20, 30);
+    C.fillStyle = 'pink';
+    C.strokeStyle = 'pink';
+    C.strokeText(seconds, 120, 30);
+    C.closePath();
+  }
+
+  showScore() {
+    C.beginPath();
+    C.font = '30px Arial';
+    C.fillStyle = 'white';
+    C.fillText('Score: ', W - 150, 30);
+    C.fillStyle = 'pink';
+    C.strokeStyle = 'pink';
+    C.strokeText(this.snake.total, W - 50, 30);
+    C.closePath();
+  }
+
 }
 
 
@@ -179,6 +206,7 @@ game.grid.drawSnake(game.snake);
 document.addEventListener('keydown', () => {
   if (!GAME_STARTED) {
     GAME_STARTED = true;
+    START_TIME = Date.now();
     main();
   }
 });
