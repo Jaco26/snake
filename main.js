@@ -132,6 +132,7 @@ class Game {
       this.generateFood();
     }
     this.snake.update();
+    this.checkGameOver();
   }
 
   snakeAteFood() {
@@ -151,6 +152,12 @@ class Game {
     this.grid.lightUpCell(row, col, 'red')
   }
 
+  checkGameOver() {
+    if (!this.snakeInBounds() || this.snakeEatingTail()) {
+      this.gameOver = true;
+    }
+  }
+
   snakeInBounds() {
     const { row, col } = this.snake;
     return row >= 0
@@ -159,9 +166,31 @@ class Game {
       && col < this.grid.nCols;
   }
 
+  snakeEatingTail() {
+    const { row, col } = this.snake;
+    const tail = this.snake.tail;
+    let i;
+    for (i = 0; i < tail.length; i++) {
+      if (col === tail[i].col && row === tail[i].row) {
+        return true;
+      }
+    }
+  }
+
+  startScreen() {
+    this.grid.drawSnake(this.snake);
+    this.showClock();
+    this.showScore();
+    C.beginPath();
+    C.font = '50px Arial';
+    C.fillStyle = 'cyan';
+    C.fillText('Press any key...', (W / 2) - 100, H / 2);
+    C.closePath();
+  }
+
   showClock() {
     const milliSinceStart = Date.now() - START_TIME;
-    const seconds = Math.floor(milliSinceStart / 1000);
+    const seconds = Math.floor(milliSinceStart / 1000) || 0;
     C.beginPath();
     C.font = '30px Arial';
     C.fillStyle = 'white';
@@ -188,9 +217,11 @@ class Game {
 
 const game = new Game();
 
+game.startScreen();
+
 function main() {
   RATE_COUNT -= 1;
-  if (game.snakeInBounds() && !game.gameOver) {
+  if (!game.gameOver) {
     if (RATE_COUNT === 0) {
       game.run();
       RATE_COUNT = RATE;
@@ -200,8 +231,6 @@ function main() {
     game.over();
   }
 }
-
-game.grid.drawSnake(game.snake);
 
 document.addEventListener('keydown', () => {
   if (!GAME_STARTED) {
