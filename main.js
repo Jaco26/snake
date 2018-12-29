@@ -1,20 +1,14 @@
 const CANVAS = document.getElementById('game-canvas');
-const W = CANVAS.width = 700;
-const H = CANVAS.height = 700;
+const W = CANVAS.width = 1200;
+const H = CANVAS.height = 800;
 const C = CANVAS.getContext('2d');
 
-let RATE = 10;
+let RATE = 8;
 let RATE_COUNT = RATE;
+let GAME_STARTED = false;
 
-
-class GridCell {
-  constructor(x, y, width, height) {
-    this.x = x;
-    this.y = y;
-    
-    this.width = width;
-    this.height = height;
-  }
+function randRange(min, max) {
+  return Math.floor(Math.random() * (max - min) + min);
 }
 
 class Grid {
@@ -26,14 +20,14 @@ class Grid {
   }
 
   generateCells() {
-    const cellWidth = W / this.nCols;
-    const cellHeight = H / this.nRows;
+    const width = W / this.nCols;
+    const height = H / this.nRows;
     for (let row = 0; row < this.nRows; row++) {
-      const y = cellHeight * row;
+      const y = height * row;
       const rowCells = [];
       for (let col = 0; col < this.nCols; col++) {
-        const x = cellWidth * col;
-        rowCells.push(new GridCell(x, y, cellWidth, cellHeight));
+        const x = width * col;
+        rowCells.push({ x, y, width, height });
       }
       this.cells.push(rowCells);
     }
@@ -43,10 +37,17 @@ class Grid {
     const cell = this.cells[row][col];
     if (cell) {
       C.beginPath();
+      C.rect(cell.x, cell.y, cell.width, cell.height);
       C.strokeStyle = color || 'white';
-      C.strokeRect(cell.x, cell.y, cell.width, cell.height);
+      C.fillStyle = '#80a0f033';
+      C.stroke();
+      C.fill();
       C.closePath();
     }
+  }
+
+  drawFood(food) {
+    this.lightUpCell(food.row, food.col, 'white')
   }
 
   drawSnake(snake) {
@@ -60,14 +61,6 @@ class Grid {
 }
 
 
-class SnakeSegment {
-  constructor(row, col) {
-    this.row = row;
-    this.col = col;
-  }
-}
-
-
 class Snake {
   constructor() {
     this.row = 15;
@@ -75,7 +68,7 @@ class Snake {
 
     this.tail = [];
     this.total = 0;
-    this.color = 'pink'
+    this.color = true ? 'lime' : 'pink';
 
     this.dx = 1;
     this.dy = 0;
@@ -87,21 +80,17 @@ class Snake {
 
   setDirection(keyCode) {
     const setDir = (dxVal, dyVal) => {
-      this.dx = dxVal; 
-      this.dy = dyVal;
+      if (this.dx !== -dxVal) this.dx = dxVal;
+      if (this.dy !== -dyVal) this.dy = dyVal;
     };
     const router = {
-      37: () => this.dx !== -1 ? setDir(-1, 0) : null,
-      38: () => this.dy !== -1 ? setDir(0, -1): null,
-      39: () => this.dx !== 1 ? setDir(1, 0) : null,
-      40: () => this.dy !== 1 ? setDir(0, 1) : null,
-      32: () => this.grow(),
+      37: () => setDir(-1, 0),
+      38: () => setDir(0, -1),
+      39: () => setDir(1, 0),
+      40: () => setDir(0, 1),
+      // 32: () => this.total++,
     };
     if (router[keyCode]) router[keyCode]();
-  }
-
-  grow() {
-    this.total++;
   }
 
   update() {    
@@ -113,7 +102,7 @@ class Snake {
       }
     }
     // add a new snake sagement to the tail
-    this.tail[this.total - 1] = new SnakeSegment(this.row, this.col);
+    this.tail[this.total - 1] = { col: this.col, row: this.row };
     
     this.col += this.dx;
     this.row += this.dy;
@@ -125,13 +114,38 @@ class Game {
   constructor() {
     this.grid = new Grid();
     this.snake = new Snake();
+    this.food = {};
+    this.gameOver = false;
+
+    this.generateFood();
   }
 
   run() {
-    console.log(this.snake.tail);
-    this.clearBoard();
+    C.clearRect(0, 0, W, H);
     this.grid.drawSnake(this.snake);
+    this.grid.drawFood(this.food);
+    if (this.snakeAteFood()) {
+      this.snake.total++;
+      this.generateFood();
+    }
     this.snake.update();
+  }
+
+  snakeAteFood() {
+    return this.snake.row === this.food.row && this.snake.col === this.food.col;
+  }
+
+  generateFood() {
+    const { nCols, nRows } = this.grid;
+    this.food = {
+      col: randRange(0, nCols),
+      row: randRange(0, nRows),
+    };
+  }
+
+  over() {
+    const { row, col } = this.snake.tail[this.snake.tail.length - 1];
+    this.grid.lightUpCell(row, col, 'red')
   }
 
   snakeInBounds() {
@@ -142,10 +156,6 @@ class Game {
       && col < this.grid.nCols;
   }
 
-  clearBoard() {
-    C.clearRect(0, 0, W, H);
-  }
-
 }
 
 
@@ -153,15 +163,22 @@ const game = new Game();
 
 function main() {
   RATE_COUNT -= 1;
-  if (game.snakeInBounds()) {
+  if (game.snakeInBounds() && !game.gameOver) {
     if (RATE_COUNT === 0) {
       game.run();
       RATE_COUNT = RATE;
     }
     requestAnimationFrame(main);
-  } 
-  
+  } else {
+    game.over();
+  }
 }
 
 game.grid.drawSnake(game.snake);
-main();
+
+document.addEventListener('keydown', () => {
+  if (!GAME_STARTED) {
+    GAME_STARTED = true;
+    main();
+  }
+});
