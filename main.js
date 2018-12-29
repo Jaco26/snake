@@ -1,6 +1,6 @@
 const CANVAS = document.getElementById('game-canvas');
-const W = CANVAS.width = 1200;
-const H = CANVAS.height = 800;
+const W = CANVAS.width = 1000;
+const H = CANVAS.height = 600;
 const C = CANVAS.getContext('2d');
 
 let RATE = 8;
