@@ -116,7 +116,10 @@ class Snake {
     if (this.segmentsToPush > 0) {
       this.body[this.body.length] = this.body[this.body.length - 1];
       this.segmentsToPush--;
-    } else {
+    } else if (OPTIONS.polluterMode === false) {
+      // shift the row and col properties of each item in this.body to equal 
+      // the row and col properties of the item ahead of it. This causes the snakes 
+      // tail to follow it
       for (let i = 0; i < this.body.length - 1; i++) {
         this.body[i] = this.body[i + 1];
       }
@@ -148,7 +151,7 @@ class Game {
     this.grid.drawFood(this.food);
     if (this.snakeAteFood()) {
       this.snake.score++;
-      this.snake.segmentsToPush += 3;
+      OPTIONS.polluterMode ? this.snake.segmentsToPush += 5 : this.snake.segmentsToPush += 3;
       this.generateFood();
     }
     this.snake.updateBody();
@@ -161,10 +164,19 @@ class Game {
 
   generateFood() {
     const { nCols, nRows } = this.grid;
-    this.food = {
-      col: randRange(0, nCols),
-      row: randRange(0, nRows),
-    };
+    const col = randRange(0, nCols);
+    const row = randRange(0, nRows);
+    let i, segment;
+    for (i = 0; i < this.snake.body.length; i++) {
+      segment = this.snake.body[i];
+      if (col === segment.col && row === segment.row) {
+        // if the new food is gonna be inside the snake, DO IT AGAIN
+        // TODO: make this work right
+        console.log('trying again to generate food');
+        return this.generateFood();
+      }
+    }
+    this.food = { col, row };
   }
 
   over() {
