@@ -3,8 +3,8 @@ const W = CANVAS.width = 1000;
 const H = CANVAS.height = 600;
 const C = CANVAS.getContext('2d');
 
-let RATE = 8;
-let RATE_COUNT = RATE;
+let ANIMATION_RATE = 8;
+let RATE_COUNT = ANIMATION_RATE;
 let GAME_STARTED = false;
 let START_TIME;
 
@@ -52,9 +52,8 @@ class Grid {
   }
 
   drawSnake(snake) {
-    this.lightUpCell(snake.row, snake.col, snake.color);
-    for (let i = 0; i < snake.tail.length; i++) {
-      const { row, col } = snake.tail[i];
+    for (let i = 0; i < snake.body.length; i++) {
+      const { row, col } = snake.body[i];
       this.lightUpCell(row, col, snake.color);
     }
   }
@@ -66,16 +65,32 @@ class Snake {
   constructor() {
     this.row = 15;
     this.col = 15;
-    this.total = 0;
-
+    this.score = 0;
+    
+    // Set to true when this.dx or this.dy are changed in this.setDirection 
+    // and false at the end of this.update. When true, this.setDirection
+    // will not be called. This prevents the snake from doubling back on
+    // itself in the event of a very quick 'valid' direction change, followed 
+    // by another that points it back toward its body before this.update
+    // can move it out of its way.
+    this.willChangeDirection = false;
+    // when set to positive int, this.update will decrement it by one
+    // as it adds segments onto this.body
     this.segmentsToPush = 0;
-    this.tail = [];
+    // initialize snake body to include its starting row and column
+    this.body = [
+      {
+        col: this.col,
+        row: this.row,
+      }
+    ];
     
     this.color = true ? 'lime' : 'pink';
 
-    this.dx = 1;
+    this.dx = 1; // initalize snake as moving to the right
     this.dy = 0;
 
+    // set keydown listener on initialization
     document.addEventListener('keydown', (e) => {
       this.setDirection(e.keyCode);
     });
@@ -85,58 +100,33 @@ class Snake {
     const setDir = (dxVal, dyVal) => {
       if (this.dx !== -dxVal) this.dx = dxVal;
       if (this.dy !== -dyVal) this.dy = dyVal;
+      this.willChangeDirection = true;
     };
     const router = {
       37: () => setDir(-1, 0),
       38: () => setDir(0, -1),
       39: () => setDir(1, 0),
       40: () => setDir(0, 1),
-      32: () => {
-        if (this.total > 2) {
-          console.table([{ col: this.col, row: this.row }])
-          console.table(this.tail)
-        }
-        this.total += 1;
-        this.segmentsToPush += 5;
-        
-        
-      },
     };
-    if (router[keyCode]) router[keyCode]();
+    
+    if (router[keyCode] && !this.willChangeDirection) router[keyCode]();
   }
 
-  updateHead() {
-    this.col += this.dx;
-    this.row += this.dy;
-  }
-
-  updateTail() {
+  updateBody() {
     if (this.segmentsToPush > 0) {
-      this.tail[this.tail.length] = this.tail[this.tail.length - 1];
+      this.body[this.body.length] = this.body[this.body.length - 1];
       this.segmentsToPush--;
     } else {
-      // for (let i = 0; i < this.tail.length - 1; i++) {
-      //   this.tail[i] = this.tail[i + 1];
-      // }
-    }
-    this.tail[this.tail.length - 1] = { col: this.col, row: this.row };
+      for (let i = 0; i < this.body.length - 1; i++) {
+        this.body[i] = this.body[i + 1];
+      }
+    } 
+    this.col += this.dx;
+    this.row += this.dy;
+    this.body[this.body.length - 1] = { col: this.col, row: this.row };
+    this.willChangeDirection = false;
   }
 
-
-  // update() {    
-  //   // if the total equals the tail length,
-  //   if (this.total === this.tail.length) {
-  //     for (let i = 0; i < this.tail.length - 1; i++) {
-  //       // shift each item in the tail
-  //       this.tail[i] = this.tail[i + 1];
-  //     }
-  //   }
-  //   // add a new snake sagement to the tail
-  //   this.tail[this.total - 1] = { col: this.col, row: this.row };
-    
-  //   this.col += this.dx;
-  //   this.row += this.dy;
-  // }
 }
 
 
@@ -157,13 +147,11 @@ class Game {
     this.grid.drawSnake(this.snake);
     this.grid.drawFood(this.food);
     if (this.snakeAteFood()) {
-      // this.snake.total++;
-      this.snake.total += 3;
+      this.snake.score++;
       this.snake.segmentsToPush += 3;
       this.generateFood();
     }
-    this.snake.updateHead();
-    this.snake.updateTail();
+    this.snake.updateBody();
     this.checkGameOver();
   }
 
@@ -180,14 +168,19 @@ class Game {
   }
 
   over() {
-    const { row, col } = this.snake.tail[this.snake.tail.length - 1];
-    this.grid.lightUpCell(row, col, 'red')
+    let { row, col } = this.snake.body[this.snake.body.length - 1];
+    // Coerce row and col values to be in bounds
+    // TODO: refactor to make this unnecessary
+    if (row >= this.grid.nRows) row = this.grid.nRows - 1;
+    if (row < 0) row = 0;
+    if (col >= this.grid.nCols) col = this.grid.nCols - 1;
+    if (col < 0) col = 0;
+    this.grid.lightUpCell(row, col, 'red');
+    this.gameOverScreen();
   }
 
-  checkGameOver() {
-    console.log(this.snakeEatingTail());
-    
-    if (!this.snakeInBounds() /*|| this.snakeEatingTail()*/) {
+  checkGameOver() {    
+    if (!this.snakeInBounds() || this.snakeEatingSelf()) {
       this.gameOver = true;
     }
   }
@@ -200,15 +193,23 @@ class Game {
       && col < this.grid.nCols;
   }
 
-  snakeEatingTail() {
+  snakeEatingSelf() {
     const { row, col } = this.snake;
-    const tail = this.snake.tail;    
+    const body = this.snake.body;    
     let i;
-    for (i = 0; i < tail.length; i++) {
-      if (col === tail[i].col && row === tail[i].row) {
+    for (i = 0; i < body.length - 1; i++) {
+      if (col === body[i].col && row === body[i].row) {
         return true;
       }
     }
+  }
+
+  gameOverScreen() {
+    C.beginPath();
+    C.font = '50px Arial';
+    C.fillStyle = 'orange';
+    C.fillText('Game Over', (W / 2) - 100, H / 2);
+    C.closePath();
   }
 
   startScreen() {
@@ -242,10 +243,9 @@ class Game {
     C.fillText('Score: ', W - 150, 30);
     C.fillStyle = 'pink';
     C.strokeStyle = 'pink';
-    C.strokeText(this.snake.total, W - 50, 30);
+    C.strokeText(this.snake.score, W - 50, 30);
     C.closePath();
   }
-
 }
 
 
@@ -258,7 +258,7 @@ function main() {
   if (!game.gameOver) {
     if (RATE_COUNT === 0) {
       game.run();
-      RATE_COUNT = RATE;
+      RATE_COUNT = ANIMATION_RATE;
     }
     requestAnimationFrame(main);
   } else {
