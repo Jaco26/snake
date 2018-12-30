@@ -66,9 +66,11 @@ class Snake {
   constructor() {
     this.row = 15;
     this.col = 15;
-
-    this.tail = [];
     this.total = 0;
+
+    this.segmentsToPush = 0;
+    this.tail = [];
+    
     this.color = true ? 'lime' : 'pink';
 
     this.dx = 1;
@@ -89,25 +91,52 @@ class Snake {
       38: () => setDir(0, -1),
       39: () => setDir(1, 0),
       40: () => setDir(0, 1),
-      // 32: () => this.total++,
+      32: () => {
+        if (this.total > 2) {
+          console.table([{ col: this.col, row: this.row }])
+          console.table(this.tail)
+        }
+        this.total += 1;
+        this.segmentsToPush += 5;
+        
+        
+      },
     };
     if (router[keyCode]) router[keyCode]();
   }
 
-  update() {    
-    if (this.total === this.tail.length) {
-      // if the this.total is the same as the existing tail length
-      for (let i = 0; i < this.tail.length - 1; i++) {
-        // shift each item in the tail
-        this.tail[i] = this.tail[i + 1];
-      }
-    }
-    // add a new snake sagement to the tail
-    this.tail[this.total - 1] = { col: this.col, row: this.row };
-    
+  updateHead() {
     this.col += this.dx;
     this.row += this.dy;
   }
+
+  updateTail() {
+    if (this.segmentsToPush > 0) {
+      this.tail[this.tail.length] = this.tail[this.tail.length - 1];
+      this.segmentsToPush--;
+    } else {
+      // for (let i = 0; i < this.tail.length - 1; i++) {
+      //   this.tail[i] = this.tail[i + 1];
+      // }
+    }
+    this.tail[this.tail.length - 1] = { col: this.col, row: this.row };
+  }
+
+
+  // update() {    
+  //   // if the total equals the tail length,
+  //   if (this.total === this.tail.length) {
+  //     for (let i = 0; i < this.tail.length - 1; i++) {
+  //       // shift each item in the tail
+  //       this.tail[i] = this.tail[i + 1];
+  //     }
+  //   }
+  //   // add a new snake sagement to the tail
+  //   this.tail[this.total - 1] = { col: this.col, row: this.row };
+    
+  //   this.col += this.dx;
+  //   this.row += this.dy;
+  // }
 }
 
 
@@ -128,10 +157,13 @@ class Game {
     this.grid.drawSnake(this.snake);
     this.grid.drawFood(this.food);
     if (this.snakeAteFood()) {
-      this.snake.total++;
+      // this.snake.total++;
+      this.snake.total += 3;
+      this.snake.segmentsToPush += 3;
       this.generateFood();
     }
-    this.snake.update();
+    this.snake.updateHead();
+    this.snake.updateTail();
     this.checkGameOver();
   }
 
@@ -153,7 +185,9 @@ class Game {
   }
 
   checkGameOver() {
-    if (!this.snakeInBounds() || this.snakeEatingTail()) {
+    console.log(this.snakeEatingTail());
+    
+    if (!this.snakeInBounds() /*|| this.snakeEatingTail()*/) {
       this.gameOver = true;
     }
   }
@@ -168,7 +202,7 @@ class Game {
 
   snakeEatingTail() {
     const { row, col } = this.snake;
-    const tail = this.snake.tail;
+    const tail = this.snake.tail;    
     let i;
     for (i = 0; i < tail.length; i++) {
       if (col === tail[i].col && row === tail[i].row) {
