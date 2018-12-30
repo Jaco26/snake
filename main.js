@@ -6,6 +6,7 @@ const C = CANVAS.getContext('2d');
 let ANIMATION_RATE = 8;
 let RATE_COUNT = ANIMATION_RATE;
 let GAME_STARTED = false;
+let GAME_PAUSED = false;
 let START_TIME;
 
 function randRange(min, max) {
@@ -109,7 +110,7 @@ class Snake {
       40: () => setDir(0, 1),
     };
     
-    if (router[keyCode] && !this.willChangeDirection) router[keyCode]();
+    if (!GAME_PAUSED && router[keyCode] && !this.willChangeDirection) router[keyCode]();
   }
 
   updateBody() {
@@ -269,11 +270,12 @@ function main() {
   RATE_COUNT -= 1;
   if (!game.gameOver) {
     if (RATE_COUNT === 0) {
-      game.run();
+      if (!GAME_PAUSED) game.run();
       RATE_COUNT = ANIMATION_RATE;
     }
     requestAnimationFrame(main);
   } else {
+    pauseButton.el.disabled = true;
     game.over();
   }
 }
@@ -282,6 +284,18 @@ document.addEventListener('keydown', () => {
   if (!GAME_STARTED) {
     GAME_STARTED = true;
     START_TIME = Date.now();
+    pauseButton.el.disabled = false;
     main();
   }
 });
+
+pauseButton.on('click', () => {
+  if (GAME_PAUSED) {
+    GAME_PAUSED = false;
+    pauseButton.el.textContent = 'Pause';
+  } else {
+    GAME_PAUSED = true;
+    pauseButton.el.textContent = 'Resume';
+  }
+});
+

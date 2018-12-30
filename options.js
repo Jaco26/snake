@@ -34,3 +34,5 @@ gameMode.on('click', (e) => {
   }
 });
 
+const pauseButton = get('pause-button');
+pauseButton.el.disabled = true;

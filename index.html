@@ -13,35 +13,39 @@
     }
     .container {
       height: 100%;
-      
     }
     .row {
       display: flex;
       align-items: center;
       justify-content: center;
-     
     }
     .flex {
       flex: 1;
-      /* background-color: aquamarine; */
       margin-top: 10px;
       box-shadow: 2px 3px 4px black;
     }
     #game-canvas {
       background-color: #111;
     }
-    #game-mode {
-      width: 250px; 
-      height: 50px; 
-      font-size: 20px;
+    .btn {
       border: none;
+      font-size: 20px;
     }
-    #game-mode:hover {
+    .btn:hover {
       box-shadow: 3px 4px 5px black;
       cursor: pointer;
     }
-    #game-mode:active {
+    .btn:active {
       box-shadow: 1px 2px 3px black;
+    }
+    #game-mode {
+      width: 250px; 
+      height: 50px; 
+    }
+    #pause-button {
+      margin-left: 10px;
+      width: 100px;
+      height: 50px;
     }
   </style>
 </head>
@@ -50,7 +54,10 @@
   <div class="container">
     <div class="row">
       <div>
-        <button class="flex" id="game-mode">Activate Wacky Mode</button>
+        <button class="flex btn" id="game-mode">Activate Wacky Mode</button>
+      </div>
+      <div>
+        <button class="flex btn" id="pause-button">Pause</button>
       </div>
     </div>
     <div class="row">
