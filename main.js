@@ -217,6 +217,14 @@ class Game {
     }
   }
 
+  pauseScreen() {
+    C.beginPath();
+    C.font = '50px Arial';
+    C.fillStyle = 'white';
+    C.fillText('Game Paused', (W / 2) - 150, H / 2);
+    C.closePath();
+  }
+
   gameOverScreen() {
     C.beginPath();
     C.font = '50px Arial';
@@ -271,6 +279,7 @@ function main() {
   if (!game.gameOver) {
     if (RATE_COUNT === 0) {
       if (!GAME_PAUSED) game.run();
+      else game.pauseScreen();
       RATE_COUNT = ANIMATION_RATE;
     }
     requestAnimationFrame(main);
