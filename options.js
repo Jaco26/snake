@@ -28,7 +28,7 @@ gameMode.on('click', (e) => {
     gameMode.el.style.color = 'orange';
 
   } else {
-    gameMode.el.textContent = 'Activate Wacky Mode';
+    gameMode.el.textContent = 'Activate Polluter Mode';
     gameMode.el.style.backgroundColor = '#efefef';
     gameMode.el.style.color = 'black';
   }
