@@ -284,7 +284,7 @@ function main() {
     }
     requestAnimationFrame(main);
   } else {
-    pauseButton.el.disabled = true;
+    // showNewGameButton()
     game.over();
   }
 }
@@ -308,3 +308,18 @@ pauseButton.on('click', () => {
   }
 });
 
+function showNewGameButton() {
+  const ctrlRow = document.getElementById('controls');
+  const newGameBtn = document.createElement('button');
+  newGameBtn.setAttribute('class', 'btn');
+  newGameBtn.style.height = '50px';
+  newGameBtn.style.marginLeft = '10px';
+  newGameBtn.style.width = '100px';
+  newGameBtn.textContent = 'New Game';
+  const wrapperDiv = document.createElement('div');
+  wrapperDiv.appendChild(newGameBtn);
+  ctrlRow.appendChild(wrapperDiv);
+  newGameBtn.addEventListener('click', (e) => {
+
+  });
+}
